@@ -49,16 +49,6 @@ static bool AmIBeingDebugged(void)
 	return ( (info.kp_proc.p_flag & P_TRACED) != 0 );
 }
 
-#if TARGET_CPU_ARM
-#define DEBUGSTOP(signal) __asm__ __volatile__ ("mov r0, %0\nmov r1, %1\nmov r12, %2\nswi 128\n" : : "r"(getpid ()), "r"(signal), "r"(37) : "r12", "r0", "r1", "cc");
-#define DEBUGGER do { int trapSignal = AmIBeingDebugged () ? SIGINT : SIGSTOP; DEBUGSTOP(trapSignal); if (trapSignal == SIGSTOP) { DEBUGSTOP (SIGINT); } } while (false);
-#elif TARGET_CPU_X86 || TARGET_CPU_X86_64
-#define DEBUGGER do { int trapSignal = AmIBeingDebugged () ? SIGINT : SIGSTOP; __asm__ __volatile__ ("pushl %0\npushl %1\npush $0\nmovl %2, %%eax\nint $0x80\nadd $12, %%esp" : : "g" (trapSignal), "g" (getpid ()), "n" (37) : "eax", "cc"); } while (false);
-#else
-#define DEBUGGER
-#warning "Debugger disabled."
-#endif
-
 @interface DCIntrospect ()
 
 - (void)takeFirstResponder;
@@ -626,7 +616,6 @@ id UITextInputTraits_valueForKey(id self, SEL _cmd, NSString *key)
 			UIView *view = self.currentView;
 			view.tag = view.tag;	// suppress the xcode warning about an unused variable.
 			NSLog(@"DCIntrospect: access current view using local 'view' variable.");
-			DEBUGGER;
 			return NO;
 		}
 		
